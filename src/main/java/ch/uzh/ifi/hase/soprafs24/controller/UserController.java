@@ -2,14 +2,12 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.LogoutPutDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.LoginPostDTO;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -86,15 +84,31 @@ public class UserController {
         boolean authenticated = userService.authenticateUser(token);
 
         if (authenticated) {
-            List<User> users = userService.getUsers();
-            for (User user : users) {
-                if (user.getId() == id) {
-                    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
-                }
-            }
+            User user = userService.getUserById(id);
+            return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+
+            } throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization failed");
+    }
+
+    @PutMapping("/users/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseBody
+    public ResponseEntity<Void> updateUser(@PathVariable long id, @RequestBody EditPutDTO editPutDTO) {
+        userService.update(id, editPutDTO);
+        return ResponseEntity.noContent().build(); // returns no data but a successful 204 HTTP status
+
+    }
+
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO getLoggedinUser(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        User user = userRepository.findByToken(token);
+        if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization failed");
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
     }
 }
 

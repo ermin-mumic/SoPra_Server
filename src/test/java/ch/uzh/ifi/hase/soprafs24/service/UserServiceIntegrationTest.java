@@ -7,8 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.boot.test.context.SpringBootTest; // used to run tests with the full application context
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.web.WebAppConfiguration; // tests run in web app environment
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,18 +19,18 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @see UserService
  */
-@WebAppConfiguration
+@WebAppConfiguration // test runs in web app environment
 @SpringBootTest
 public class UserServiceIntegrationTest {
 
-  @Qualifier("userRepository")
+  @Qualifier("userRepository") //userRepositorx is injected
   @Autowired
   private UserRepository userRepository;
 
-  @Autowired
+  @Autowired // injects UserService
   private UserService userService;
 
-  @BeforeEach
+  @BeforeEach // runs before each test to clear database
   public void setup() {
     userRepository.deleteAll();
   }
@@ -37,21 +38,25 @@ public class UserServiceIntegrationTest {
   @Test
   public void createUser_validInputs_success() {
     // given
-    assertNull(userRepository.findByUsername("testUsername"));
+    assertNull(userRepository.findByUsername("testUsername")); // ensures no user with username "testUsername" exists in database
 
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
+    testUser.setPassword("testPassword");
 
     // when
     User createdUser = userService.createUser(testUser);
 
     // then
-    assertEquals(testUser.getId(), createdUser.getId());
+    assertNotNull(createdUser.getId());
     assertEquals(testUser.getName(), createdUser.getName());
     assertEquals(testUser.getUsername(), createdUser.getUsername());
+    assertEquals(testUser.getPassword(), createdUser.getPassword());
+    assertNotNull(createdUser.getCreationDate());
     assertNotNull(createdUser.getToken());
     assertEquals(UserStatus.OFFLINE, createdUser.getStatus());
+    assertNull(createdUser.getBirthday());
   }
 
   @Test
@@ -61,6 +66,7 @@ public class UserServiceIntegrationTest {
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
+    testUser.setPassword("testPassword");
     User createdUser = userService.createUser(testUser);
 
     // attempt to create second user with same username
@@ -69,8 +75,11 @@ public class UserServiceIntegrationTest {
     // change the name but forget about the username
     testUser2.setName("testName2");
     testUser2.setUsername("testUsername");
+    testUser2.setPassword("testPassword2");
 
-    // check that an error is thrown
-    assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));
+    // check that an 409 Conflict error is thrown
+    ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));
+    assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+
   }
 }

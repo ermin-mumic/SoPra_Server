@@ -37,7 +37,7 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String creationDate;
 
-    @Column(nullable = false)
+    @Column()
     private String birthday;
 
     @Column(nullable = false, unique = true)
