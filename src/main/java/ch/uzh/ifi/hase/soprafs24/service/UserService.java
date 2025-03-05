@@ -58,6 +58,7 @@ public class UserService {
         return newUser;
     }
 
+    @Transactional
     public User logInUser(LoginPostDTO loginPostDTO) {
         User user = userRepository.findByName(loginPostDTO.getUsername());
         if (user == null) {
