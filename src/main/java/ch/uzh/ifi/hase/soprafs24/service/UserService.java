@@ -103,7 +103,7 @@ public class UserService {
             if (user.getId() == id) {
                 return (user);
             }
-        }  return null;
+        }  throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
     }
 
     public void update(long id, EditPutDTO editPutDTO) {
